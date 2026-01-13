@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "600653046186",
+    "project_id": "shiwalik-education",
+    "storage_bucket": "shiwalik-education.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:600653046186:android:be10c9f71727a99b66cbd3",
+        "android_client_info": {
+          "package_name": "com.shiwalikeducation.apppro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCuWlC107lbpCi2t3w7tW788L_6l0ethdQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
