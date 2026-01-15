@@ -59,10 +59,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAu-dEWWNl0QabgU8QfSNDZuizESqVB1CA',
-    appId: '1:600653046186:ios:eb90d3246a93150866cbd3',
+    appId: '1:600653046186:ios:52f54df21cd81b2266cbd3',
     messagingSenderId: '600653046186',
     projectId: 'shiwalik-education',
     storageBucket: 'shiwalik-education.firebasestorage.app',
-    iosBundleId: 'com.example.shivalikSchool',
+    iosBundleId: 'com.shiwalikeducation.apppro',
   );
 }
