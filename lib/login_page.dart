@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -26,21 +27,22 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  Future<void> _login() async {
-    if (idController.text.trim().isEmpty ||
-        passwordController.text.trim().isEmpty) {
-      setState(() {
-        _errorMessage = "Please enter ID and password";
-        _isLoading = false;
-      });
-      return;
-    }
-
+ Future<void> _login() async {
+  if (idController.text.trim().isEmpty ||
+      passwordController.text.trim().isEmpty) {
     setState(() {
-      _isLoading = true;
-      _errorMessage = '';
+      _errorMessage = "Please enter ID and password";
+      _isLoading = false;
     });
+    return;
+  }
 
+  setState(() {
+    _isLoading = true;
+    _errorMessage = '';
+  });
+
+  try {
     final response = await ApiService.postPublic(
       "/login",
       body: {
@@ -48,7 +50,7 @@ class _LoginPageState extends State<LoginPage> {
         'password': passwordController.text,
         'type': selectedRole,
       },
-    );
+    ).timeout(const Duration(seconds: 15)); // 🔴 TIMEOUT ADDED
 
     if (response == null) {
       setState(() {
@@ -60,11 +62,16 @@ class _LoginPageState extends State<LoginPage> {
 
     final data = jsonDecode(response.body);
     debugPrint("🟢 LOGIN RESPONSE: $data");
+
     if (data['status'] == true) {
       await ApiService.saveSession(data);
 
-      // ✅ ADD THIS
-      await sendFcmTokenToLaravel();
+      // 🔴 STOP LOADER BEFORE ANY NAVIGATION
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      // send token AFTER stopping loader (safe)
+       sendFcmTokenToLaravel();
 
       if (!mounted) return;
 
@@ -81,14 +88,31 @@ class _LoginPageState extends State<LoginPage> {
           (_) => false,
         );
       }
+
     } else {
       setState(() {
         _errorMessage = data['message'] ?? "Invalid credentials";
+        _isLoading = false;
       });
     }
 
-    setState(() => _isLoading = false);
+  } on TimeoutException {
+    // 🔴 INTERNET SLOW / SERVER STUCK
+    setState(() {
+      _errorMessage = "Connection timeout. Please try again.";
+      _isLoading = false;
+    });
+
+  } catch (e) {
+    debugPrint("❌ LOGIN ERROR: $e");
+
+    setState(() {
+      _errorMessage = "Something went wrong. Try again.";
+      _isLoading = false;
+    });
   }
+}
+
 
   Future<void> sendFcmTokenToLaravel() async {
     final fcmToken = await FirebaseMessaging.instance.getToken();
