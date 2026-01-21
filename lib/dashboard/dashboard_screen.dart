@@ -13,8 +13,9 @@ import 'package:shivalik_school/Attendance_UI/attendance_pie_chart.dart';
 import 'package:shivalik_school/Notification/notification_list.dart';
 import 'package:shivalik_school/connect_teacher/connect_with_us.dart';
 import 'package:shivalik_school/dashboard/calendar.dart';
-// import 'package:shivalik_school/dashboard/dashboard_new.dart';
+import 'package:shivalik_school/dashboard/dashboard_new.dart';
 import 'package:shivalik_school/dashboard/payment_screen.dart';
+import 'package:shivalik_school/dashboard/stu_dashboard.dart';
 import 'package:shivalik_school/homework/homework_model.dart';
 import 'package:shivalik_school/homework/homework_page.dart';
 import 'package:shivalik_school/dashboard/timetable_page.dart';
@@ -1240,17 +1241,28 @@ class LeftSidebarMenu extends StatelessWidget {
                 );
               },
             ),
-            // sidebarTile(
-            //   icon: Icons.dashboard,
-            //   context: context,
-            //   title: 'Dummy',
-            //   onTap: () {
-            //     Navigator.push(
-            //       context,
-            //       MaterialPageRoute(builder: (_) => DashboardNew()),
-            //     );
-            //   },
-            // ),
+            sidebarTile(
+              icon: Icons.dashboard,
+              context: context,
+              title: 'New Dashboard',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => DashboardNew()),
+                );
+              },
+            ),
+            sidebarTile(
+              icon: Icons.dashboard,
+              context: context,
+              title: 'New Dashboard',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => StudentDashboard()),
+                );
+              },
+            ),
             sidebarTile(
               icon: Icons.person,
               context: context,

@@ -69,9 +69,25 @@ class _RootDeciderState extends State<RootDecider> {
     debugPrint("🔔 Foreground message received");
     NotificationService.display(message);
   });
-
+ _initFirebaseMessaging(); 
     _initApp();
   }
+Future<void> _initFirebaseMessaging() async {
+  NotificationSettings settings =
+      await FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+
+  debugPrint("🔔 Permission status: ${settings.authorizationStatus}");
+
+  String? fcmToken = await FirebaseMessaging.instance.getToken();
+  String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+
+  debugPrint("🔥 FCM TOKEN = $fcmToken");
+  debugPrint("🍎 APNS TOKEN = $apnsToken");
+}
 
   Future<void> _initApp() async {
     try {

@@ -1,14 +1,21 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:shivalik_school/Attendance_UI/stu_attendance_page.dart';
+import 'package:shivalik_school/Exam/exam_schedule.dart';
 import 'package:shivalik_school/Exam/stu_result.dart';
+import 'package:shivalik_school/Notification/notification_list.dart';
 import 'package:shivalik_school/api_service.dart';
+import 'package:shivalik_school/complaint/view_complaints_page.dart';
 import 'package:shivalik_school/connect_teacher/connect_with_us.dart';
 import 'package:shivalik_school/dashboard/calendar.dart';
+import 'package:shivalik_school/dashboard/payment_screen.dart';
+import 'package:shivalik_school/dashboard/timetable_page.dart';
 import 'package:shivalik_school/homework/homework_page.dart';
 import 'package:shivalik_school/payment/fee_details_page.dart';
 import 'package:shivalik_school/payment/payment_page.dart';
 import 'package:shivalik_school/subjects_page.dart';
+import 'package:shivalik_school/syllabus/syllabus.dart';
 
 class DashboardNew extends StatefulWidget {
   const DashboardNew({super.key});
@@ -20,7 +27,7 @@ class DashboardNew extends StatefulWidget {
 class _DashboardNewState extends State<DashboardNew> {
   int _currentIndex = 0;
   bool isLoading = true;
-
+  int fine = 0;
   int dues = 0;
   int payments = 0;
   int subjects = 0;
@@ -33,14 +40,6 @@ class _DashboardNewState extends State<DashboardNew> {
     fetchDashboardData();
   }
 
-  // 🔹 Pages for Bottom Navigation
-  // final List<Widget> _pages = const [
-  //   DashboardHomeBody(),
-  //   Center(child: Text("Academics")),
-  //   Center(child: Text("Attendance")),
-  //   Center(child: Text("Contact")),
-  //   Center(child: Text("Profile")),
-  // ];
   Future<void> fetchDashboardData() async {
     final response = await ApiService.post(context, "/student/dashboard");
 
@@ -50,6 +49,8 @@ class _DashboardNewState extends State<DashboardNew> {
       final data = jsonDecode(response.body);
 
       setState(() {
+        fine = data['fine'] ?? 0;
+
         dues = data['dues'] ?? 0;
         payments = int.tryParse(data['payments'].toString()) ?? 0;
         subjects = data['subjects'] ?? 0;
@@ -98,16 +99,32 @@ class _DashboardNewState extends State<DashboardNew> {
         ),
 
         // ✅ RIGHT ICONS
-        actions: const [
-          Icon(Icons.search, color: Colors.white),
-          SizedBox(width: 12),
-          Icon(Icons.notifications_none, color: Colors.white),
-          SizedBox(width: 12),
-          CircleAvatar(
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.white),
+            onPressed: () {
+              // Search page later
+            },
+          ),
+
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => NotificationListPage()),
+              );
+            },
+          ),
+
+          const SizedBox(width: 4),
+
+          const CircleAvatar(
             radius: 16,
             backgroundImage: AssetImage("assets/images/logo.png"),
           ),
-          SizedBox(width: 12),
+
+          const SizedBox(width: 12),
         ],
       ),
 
@@ -121,6 +138,7 @@ class _DashboardNewState extends State<DashboardNew> {
               children: [
                 DashboardHomeBody(
                   dues: dues,
+                  fine: fine,
                   payments: payments,
                   subjects: subjects,
                   lastPaymentDate: lastPaymentDate,
@@ -167,6 +185,7 @@ class DashboardHomeBody extends StatefulWidget {
   final int subjects;
   final String lastPaymentDate;
   final String todayStatus;
+  final int fine;
 
   const DashboardHomeBody({
     super.key,
@@ -175,6 +194,7 @@ class DashboardHomeBody extends StatefulWidget {
     required this.subjects,
     required this.lastPaymentDate,
     required this.todayStatus,
+    required this.fine,
   });
 
   @override
@@ -182,7 +202,275 @@ class DashboardHomeBody extends StatefulWidget {
 }
 
 class _DashboardHomeBodyState extends State<DashboardHomeBody> {
-  @override
+  void _showPaymentConfirmationDialog(
+    BuildContext dashboardContext,
+    int dues,
+    int fine,
+  ) {
+    final totalAmount = dues + fine;
+    print('DEBUG: Dialog opened. Total amount: ₹$totalAmount');
+
+    showDialog(
+      context: dashboardContext,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text(
+            'Confirm Payment',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDialogRow(' Fee Amount:', '₹$dues'),
+              _buildDialogRow(' Fine:', '₹$fine', color: Colors.red),
+              const Divider(),
+              _buildDialogRow('Total Payable:', '₹$totalAmount', isTotal: true),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text(
+                "Cancel",
+                style: TextStyle(color: AppColors.primary),
+              ),
+              onPressed: () {
+                print('DEBUG: Payment cancelled by user from dialog.');
+                Navigator.pop(dialogContext);
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              child: const Text("Proceed to Pay"),
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+
+                final totalDues = dues;
+                final lateFine = fine;
+                print('DEBUG: Proceed to Pay clicked. Starting API process...');
+
+                ScaffoldMessenger.of(dashboardContext).showSnackBar(
+                  const SnackBar(
+                    content: Text('Initializing payment... Please wait.'),
+                  ),
+                );
+                print('DEBUG: SnackBar shown. Calling initiatePayment...');
+
+                final paymentData = await initiatePayment(
+                  amount: totalDues,
+                  fine: lateFine,
+                );
+
+                if (paymentData != null) {
+                  final paymentUrl = paymentData['payment_url']!;
+                  final refNo = paymentData['ref_no']!;
+
+                  print('DEBUG: Init Success. RefNo: $refNo, URL received.');
+
+                  final webViewResult = await Navigator.push(
+                    dashboardContext,
+                    MaterialPageRoute(
+                      builder: (_) => PaymentWebView(
+                        paymentUrl: paymentUrl,
+                        successRedirectUrl: 'flutter://payment-success',
+                        failureRedirectUrl: 'flutter://payment-failure',
+                      ),
+                    ),
+                  );
+                  print(
+                    'DEBUG: WebView closed. Result received: $webViewResult',
+                  );
+
+                  if (webViewResult == 'PAYMENT_COMPLETE') {
+                    print(
+                      'DEBUG: WebView reports completion. Checking final status...',
+                    );
+
+                    final finalStatus = await checkPaymentStatus(refNo: refNo);
+                    print('DEBUG: Final Status from API: $finalStatus');
+
+                    if (finalStatus == 'success') {
+                      ScaffoldMessenger.of(dashboardContext).showSnackBar(
+                        const SnackBar(content: Text('Payment Successful! ✅')),
+                      );
+                      Navigator.pop(dashboardContext, true);
+
+                      print(
+                        'DEBUG: Dashboard data fetched successfully before popping.',
+                      );
+                      Navigator.pop(dashboardContext, true);
+                    } else if (finalStatus == 'pending') {
+                      ScaffoldMessenger.of(dashboardContext).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Payment Pending. Check dashboard later.',
+                          ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(dashboardContext).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Payment Failed. Status Check Failed/Unknown. ❌',
+                          ),
+                        ),
+                      );
+                    }
+                  } else if (webViewResult == 'PAYMENT_FAILED') {
+                    print('DEBUG: WebView reports failure/cancellation.');
+                    ScaffoldMessenger.of(dashboardContext).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Payment process failed or was cancelled. ❌',
+                        ),
+                      ),
+                    );
+                  } else {
+                    print(
+                      'DEBUG: Result not PAYMENT_COMPLETE/FAILED. Status check skipped.',
+                    );
+                    ScaffoldMessenger.of(dashboardContext).showSnackBar(
+                      // ✅ dashboardContext
+                      const SnackBar(
+                        content: Text(
+                          'Payment process abandoned. Status not confirmed.',
+                        ),
+                      ),
+                    );
+                  }
+                } else {
+                  // API Call failed
+                  print('ERROR: initiatePayment failed (paymentData is null).');
+                  ScaffoldMessenger.of(dashboardContext).showSnackBar(
+                    // ✅ dashboardContext
+                    const SnackBar(
+                      content: Text(
+                        'Could not initialize payment. Please try again.',
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<Map<String, String>?> initiatePayment({
+    required int amount,
+    required int fine,
+  }) async {
+    try {
+      final response = await ApiService.post(
+        context,
+        "/student/payment/initiate",
+        body: {'amount': amount.toString(), 'fine': fine.toString()},
+      );
+
+      if (response == null) {
+        debugPrint("❌ initiatePayment: response null");
+        return null;
+      }
+
+      debugPrint("DEBUG: StatusCode → ${response.statusCode}");
+      debugPrint("DEBUG: Body → ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data.containsKey('payment_url') && data.containsKey('ref_no')) {
+          return {
+            'payment_url': data['payment_url'].toString(),
+            'ref_no': data['ref_no'].toString(),
+          };
+        } else {
+          debugPrint('❌ initiatePayment: payment_url / ref_no missing');
+          return null;
+        }
+      } else {
+        debugPrint('❌ initiatePayment failed → ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint("❌ initiatePayment exception: $e");
+      return null;
+    }
+  }
+
+  Future<String?> checkPaymentStatus({required String refNo}) async {
+    try {
+      final response = await ApiService.get(
+        context,
+        "/student/payment/status/$refNo",
+      );
+
+      if (response == null) {
+        debugPrint("❌ checkPaymentStatus: response null");
+        return 'error';
+      }
+
+      debugPrint("DEBUG: StatusCode → ${response.statusCode}");
+      debugPrint("DEBUG: Body → ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data.containsKey('status')) {
+          return data['status'].toString();
+        } else {
+          debugPrint('❌ status key missing');
+          return 'unknown';
+        }
+      } else {
+        debugPrint('❌ checkPaymentStatus failed → ${response.statusCode}');
+        return 'error';
+      }
+    } catch (e) {
+      debugPrint("❌ checkPaymentStatus exception: $e");
+      return 'error';
+    }
+  }
+
+  Widget _buildDialogRow(
+    String label,
+    String value, {
+    Color color = Colors.black87,
+    bool isTotal = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: isTotal ? 16 : 14,
+              fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
+              color: isTotal ? AppColors.primary : Colors.grey[700],
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isTotal ? 16 : 14,
+              fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -192,19 +480,17 @@ class _DashboardHomeBodyState extends State<DashboardHomeBody> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              GestureDetector(
-                child: DashboardCard(
-                  title: 'Fee Amount',
-                  value: widget.dues.toString(),
-
-                  borderColor: AppColors.danger,
-                  backgroundColor: AppColors.danger.shade50,
-                  textColor: AppColors.danger,
-                ),
-
-                onTap: () => Navigator.push(
+              FeePayCard(
+                dues: widget.dues,
+                fine: widget.fine,
+                onCardTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => FeeDetailsPage()),
+                ),
+                onPayNowTap: () => _showPaymentConfirmationDialog(
+                  context,
+                  widget.dues,
+                  widget.fine,
                 ),
               ),
               GestureDetector(
@@ -294,7 +580,8 @@ class _DashboardHomeBodyState extends State<DashboardHomeBody> {
             children: [
               DashboardItem(
                 Icons.menu_book,
-                "Assignment",
+                "Homeworks",
+                color: Colors.blue,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -305,17 +592,20 @@ class _DashboardHomeBodyState extends State<DashboardHomeBody> {
 
               DashboardItem(
                 Icons.library_books,
-                "Library",
-                // onTap: () {
-                //   Navigator.push(context,
-                //     MaterialPageRoute(builder: (_) => LibraryPage()),
-                //   );
-                // },
+                "Syllabus",
+                color: Colors.deepPurple,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => SyllabusPage()),
+                  );
+                },
               ),
 
               DashboardItem(
                 Icons.bar_chart,
-                "Report Card",
+                "Results",
+                color: Colors.green,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -327,6 +617,7 @@ class _DashboardHomeBodyState extends State<DashboardHomeBody> {
               DashboardItem(
                 Icons.calendar_month,
                 "Calendar",
+                color: Colors.orange,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -338,6 +629,7 @@ class _DashboardHomeBodyState extends State<DashboardHomeBody> {
               DashboardItem(
                 Icons.receipt_long,
                 "Fee Details",
+                color: Colors.red,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -348,31 +640,54 @@ class _DashboardHomeBodyState extends State<DashboardHomeBody> {
 
               DashboardItem(
                 Icons.celebration,
-                "Happenings",
+                "Schedule",
+                color: Colors.pink,
                 onTap: () {
-                  // Events page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ExamSchedulePage()),
+                  );
                 },
               ),
 
               DashboardItem(
                 Icons.campaign,
-                "Notices",
+                "Notification",
+                color: Colors.teal,
                 onTap: () {
-                  // Notices page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => NotificationListPage()),
+                  );
                 },
               ),
-
               DashboardItem(
-                Icons.photo,
-                "Gallery",
+                Icons.calendar_view_month_rounded,
+                "Time-Table",
+                color: Colors.indigo,
                 onTap: () {
-                  // Gallery page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => TimeTablePage()),
+                  );
+                },
+              ),
+              DashboardItem(
+                Icons.compass_calibration,
+                "Complaints",
+                color: Colors.indigo,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ViewComplaintPage()),
+                  );
                 },
               ),
 
               DashboardItem(
                 Icons.support_agent,
                 "Support",
+                color: Colors.brown,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -388,18 +703,28 @@ class _DashboardHomeBodyState extends State<DashboardHomeBody> {
               ),
 
               DashboardItem(
-                Icons.health_and_safety,
-                "Health",
+                Icons.calendar_month,
+                "Attendance",
+                color: Colors.green.shade700,
                 onTap: () {
-                  // Health records page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AttendanceAnalyticsPage(),
+                    ),
+                  );
                 },
               ),
 
               DashboardItem(
                 Icons.account_balance_wallet,
-                "Ledger",
+                "Payments",
+                color: Colors.blueGrey,
                 onTap: () {
-                  // Ledger page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => PaymentPage()),
+                  );
                 },
               ),
             ],
@@ -413,13 +738,19 @@ class _DashboardHomeBodyState extends State<DashboardHomeBody> {
 }
 
 /// 🔹 SINGLE DASHBOARD ITEM
-
 class DashboardItem extends StatelessWidget {
   final IconData icon;
   final String title;
   final VoidCallback? onTap;
+  final Color color;
 
-  const DashboardItem(this.icon, this.title, {super.key, this.onTap});
+  const DashboardItem(
+    this.icon,
+    this.title, {
+    super.key,
+    this.onTap,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -428,10 +759,17 @@ class DashboardItem extends StatelessWidget {
       onTap: onTap,
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: Colors.white,
-            child: Icon(icon, color: AppColors.primary, size: 25),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15), // light background
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: color, // main icon color
+              size: 26,
+            ),
           ),
           const SizedBox(height: 10),
           Text(
@@ -439,7 +777,7 @@ class DashboardItem extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -512,6 +850,101 @@ class DashboardCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class FeePayCard extends StatelessWidget {
+  final int dues;
+  final int fine;
+  final VoidCallback onPayNowTap;
+  final VoidCallback onCardTap;
+
+  const FeePayCard({
+    super.key,
+    required this.dues,
+    required this.fine,
+    required this.onPayNowTap,
+    required this.onCardTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color primaryColor = Colors.red.shade700;
+    final Color lightColor = Colors.red.shade50;
+
+    // 💡 Condition चेक करें: dues 0 से अधिक है या नहीं
+    final bool showPayButton = dues > 0;
+
+    return GestureDetector(
+      onTap: onCardTap,
+      child: Container(
+        width: 98,
+        height: 88,
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: lightColor,
+          border: Border.all(color: primaryColor, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Fee Amount',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: primaryColor.withOpacity(0.9),
+                fontSize: 13,
+              ),
+            ),
+
+            Text(
+              '₹$dues',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: primaryColor,
+                fontSize: 18,
+                height: 1.0,
+              ),
+            ),
+
+            SizedBox(
+              height: 20,
+              width: double.infinity,
+              child: showPayButton
+                  ? ElevatedButton(
+                      onPressed: onPayNowTap,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        textStyle: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        minimumSize: Size.zero,
+                      ),
+                      child: const Text('PAY NOW'),
+                    )
+                  : Center(
+                      child: Text(
+                        'PAID',
+                        style: TextStyle(
+                          color: Colors.green.shade700,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
