@@ -27,92 +27,88 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
- Future<void> _login() async {
-  if (idController.text.trim().isEmpty ||
-      passwordController.text.trim().isEmpty) {
-    setState(() {
-      _errorMessage = "Please enter ID and password";
-      _isLoading = false;
-    });
-    return;
-  }
-
-  setState(() {
-    _isLoading = true;
-    _errorMessage = '';
-  });
-
-  try {
-    final response = await ApiService.postPublic(
-      "/login",
-      body: {
-        'username': idController.text.trim(),
-        'password': passwordController.text,
-        'type': selectedRole,
-      },
-    ).timeout(const Duration(seconds: 15)); // 🔴 TIMEOUT ADDED
-
-    if (response == null) {
+  Future<void> _login() async {
+    if (idController.text.trim().isEmpty ||
+        passwordController.text.trim().isEmpty) {
       setState(() {
-        _errorMessage = "Server not responding";
+        _errorMessage = "Please enter ID and password";
         _isLoading = false;
       });
       return;
     }
 
-    final data = jsonDecode(response.body);
-    debugPrint("🟢 LOGIN RESPONSE: $data");
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
 
-    if (data['status'] == true) {
-      await ApiService.saveSession(data);
+    try {
+      final response = await ApiService.postPublic(
+        "/login",
+        body: {
+          'username': idController.text.trim(),
+          'password': passwordController.text,
+          'type': selectedRole,
+        },
+      ).timeout(const Duration(seconds: 15)); // 🔴 TIMEOUT ADDED
 
-      // 🔴 STOP LOADER BEFORE ANY NAVIGATION
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      // send token AFTER stopping loader (safe)
-       sendFcmTokenToLaravel();
-
-      if (!mounted) return;
-
-      if (selectedRole == 'Teacher') {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const TeacherDashboardScreen()),
-          (_) => false,
-        );
-      } else {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const DashboardScreen()),
-          (_) => false,
-        );
+      if (response == null) {
+        setState(() {
+          _errorMessage = "Server not responding";
+          _isLoading = false;
+        });
+        return;
       }
 
-    } else {
+      final data = jsonDecode(response.body);
+      debugPrint("🟢 LOGIN RESPONSE: $data");
+
+      if (data['status'] == true) {
+        await ApiService.saveSession(data);
+
+        // 🔴 STOP LOADER BEFORE ANY NAVIGATION
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+
+        // send token AFTER stopping loader (safe)
+        sendFcmTokenToLaravel();
+
+        if (!mounted) return;
+
+        if (selectedRole == 'Teacher') {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const TeacherDashboardScreen()),
+            (_) => false,
+          );
+        } else {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+            (_) => false,
+          );
+        }
+      } else {
+        setState(() {
+          _errorMessage = data['message'] ?? "Invalid credentials";
+          _isLoading = false;
+        });
+      }
+    } on TimeoutException {
+      // 🔴 INTERNET SLOW / SERVER STUCK
       setState(() {
-        _errorMessage = data['message'] ?? "Invalid credentials";
+        _errorMessage = "Connection timeout. Please try again.";
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint("❌ LOGIN ERROR: $e");
+
+      setState(() {
+        _errorMessage = "Something went wrong. Try again.";
         _isLoading = false;
       });
     }
-
-  } on TimeoutException {
-    // 🔴 INTERNET SLOW / SERVER STUCK
-    setState(() {
-      _errorMessage = "Connection timeout. Please try again.";
-      _isLoading = false;
-    });
-
-  } catch (e) {
-    debugPrint("❌ LOGIN ERROR: $e");
-
-    setState(() {
-      _errorMessage = "Something went wrong. Try again.";
-      _isLoading = false;
-    });
   }
-}
-
 
   Future<void> sendFcmTokenToLaravel() async {
     final fcmToken = await FirebaseMessaging.instance.getToken();
@@ -377,10 +373,7 @@ class _LoginPageState extends State<LoginPage> {
                   Wrap(
                     alignment: WrapAlignment.center,
                     children: [
-                      Text(
-                        "Powered by ",
-                        style: TextStyle(fontSize: 12),
-                      ),
+                      Text("Powered by ", style: TextStyle(fontSize: 12)),
                       Text(
                         "TechInnovation App Pvt. Ltd.®",
                         style: TextStyle(

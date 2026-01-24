@@ -9,22 +9,27 @@ import 'package:shivalik_school/api_service.dart';
 import 'package:shivalik_school/complaint/view_complaints_page.dart';
 import 'package:shivalik_school/connect_teacher/connect_with_us.dart';
 import 'package:shivalik_school/dashboard/calendar.dart';
+import 'package:shivalik_school/dashboard/dashboard_screen.dart';
+// import 'package:shivalik_school/dashboard/dashboard_screen.dart';
 import 'package:shivalik_school/dashboard/payment_screen.dart';
 import 'package:shivalik_school/dashboard/timetable_page.dart';
 import 'package:shivalik_school/homework/homework_page.dart';
 import 'package:shivalik_school/payment/fee_details_page.dart';
 import 'package:shivalik_school/payment/payment_page.dart';
+import 'package:shivalik_school/profile_page.dart';
 import 'package:shivalik_school/subjects_page.dart';
 import 'package:shivalik_school/syllabus/syllabus.dart';
 
 class DashboardNew extends StatefulWidget {
-  const DashboardNew({super.key});
+  DashboardNew({super.key});
 
   @override
   State<DashboardNew> createState() => _DashboardNewState();
 }
 
 class _DashboardNewState extends State<DashboardNew> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   int _currentIndex = 0;
   bool isLoading = true;
   int fine = 0;
@@ -33,11 +38,213 @@ class _DashboardNewState extends State<DashboardNew> {
   int subjects = 0;
   String lastPaymentDate = '';
   String todayStatus = '';
+  List<dynamic> siblings = [];
+  String studentPhoto = '';
+  String studentName = '';
+
+  String schoolName = '';
+  String studentClass = '';
+  String studentsection = '';
 
   @override
   void initState() {
     super.initState();
     fetchDashboardData();
+  }
+
+  void _showSiblingPopup(BuildContext context) {
+    if (siblings.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Siblings'),
+          content: const Text('No siblings available for this student.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.people, color: AppColors.info),
+            SizedBox(width: 8),
+            Text(
+              'Switch Sibling',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: siblings.length,
+            itemBuilder: (context, index) {
+              final sibling = siblings[index];
+              final photoUrl =
+                  sibling['Photo'] != null &&
+                      sibling['Photo'].toString().isNotEmpty
+                  ? sibling['Photo'].toString()
+                  : ApiService.siblingUrl;
+
+              final name = sibling['Name'] ?? 'Unknown';
+              final className = sibling['Class'].toString();
+
+              final studentId = sibling['id'].toString();
+
+              print('🧠 Sibling Data: $sibling');
+
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+                child: ListTile(
+                  leading: CircleAvatar(
+                    radius: 22,
+                    backgroundColor: Colors.grey.shade200,
+                    child: ClipOval(
+                      child: Image.network(
+                        photoUrl,
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.person,
+                            size: 26,
+                            color: Colors.grey,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+
+                  title: Text(
+                    name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text('Class: $className'),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 16,
+                  ),
+                  onTap: () {
+                    // 🔹 Show confirmation dialog before switching
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext confirmContext) {
+                        return AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          title: const Text(
+                            'Confirm Switch',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          content: Text(
+                            'Are you sure you want to switch to $name?',
+                            style: const TextStyle(fontSize: 15),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(confirmContext),
+                              child: const Text(
+                                'Cancel',
+                                style: TextStyle(color: AppColors.primary),
+                              ),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                Navigator.pop(
+                                  confirmContext,
+                                ); // close confirm dialog
+                                Navigator.pop(
+                                  context,
+                                ); // close sibling list dialog safely
+                                if (!mounted) return;
+                                await _shiftLogin(studentId);
+                              },
+                              icon: const Icon(Icons.check_circle, size: 18),
+                              label: const Text('Yes, Switch'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.info,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Close',
+              style: TextStyle(color: AppColors.primary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _shiftLogin(String studentId) async {
+    if (!mounted) return;
+    try {
+      final response = await ApiService.post(
+        context,
+        "/student/shift_login",
+        body: {'id': studentId},
+      );
+
+      if (response == null) return;
+
+      final data = jsonDecode(response.body);
+
+      if (data['status'] == true) {
+        await ApiService.saveSession(data);
+
+        if (!mounted) return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => DashboardNew()),
+        );
+      } else {
+        print('❌ Shift login failed: ${data['message']}');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'] ?? 'Login failed')),
+        );
+      }
+    } catch (e) {
+      print('🚨 Exception in _shiftLogin: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Something went wrong')));
+    }
   }
 
   Future<void> fetchDashboardData() async {
@@ -74,60 +281,15 @@ class _DashboardNewState extends State<DashboardNew> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: const Color(0xffF6F8FC),
 
-      // ================= APP BAR =================
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        titleSpacing: 0,
-
-        // ✅ BACK BUTTON
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-
-        // ✅ TITLE
-        title: const Text(
-          "Shiwalik Public School",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-
-        // ✅ RIGHT ICONS
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
-            onPressed: () {
-              // Search page later
-            },
-          ),
-
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => NotificationListPage()),
-              );
-            },
-          ),
-
-          const SizedBox(width: 4),
-
-          const CircleAvatar(
-            radius: 16,
-            backgroundImage: AssetImage("assets/images/logo.png"),
-          ),
-
-          const SizedBox(width: 12),
-        ],
+      drawer: LeftSidebarMenu(
+        studentName: studentName,
+        studentPhoto: studentPhoto,
+        studentClass: studentClass,
+        studentsection: studentsection,
       ),
-
       // ================= BODY =================
       body: isLoading
           ? const Center(
@@ -136,18 +298,27 @@ class _DashboardNewState extends State<DashboardNew> {
           : IndexedStack(
               index: _currentIndex,
               children: [
-                DashboardHomeBody(
+                HomePageWrapper(
                   dues: dues,
                   fine: fine,
                   payments: payments,
                   subjects: subjects,
                   lastPaymentDate: lastPaymentDate,
                   todayStatus: todayStatus,
+                  schoolName: schoolName,
+                  studentPhoto: studentPhoto,
+                  studentName: studentName,
+                  studentClass: studentClass,
+                  studentsection: studentsection,
+                  onSiblingTap: () => _showSiblingPopup(context),
+                  onMenuTap: () {
+                    _scaffoldKey.currentState?.openDrawer();
+                  },
                 ),
-                const Center(child: Text("Academics")),
-                const Center(child: Text("Attendance")),
-                const Center(child: Text("Contact")),
-                const Center(child: Text("Profile")),
+                SubjectsPageWrapper(),
+                AttendancePageWrapper(),
+                ContactPageWrapper(),
+                ProfilePageWrapper(),
               ],
             ),
 
@@ -172,6 +343,143 @@ class _DashboardNewState extends State<DashboardNew> {
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Contact"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
+      ),
+    );
+  }
+}
+
+class SubjectsPageWrapper extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xffF6F8FC),
+
+      body: SubjectsPage(), // tera existing list UI
+    );
+  }
+}
+
+class AttendancePageWrapper extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(body: AttendanceAnalyticsPage());
+  }
+}
+
+class ContactPageWrapper extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: ConnectWithUsPage(teacherId: 0, teacherName: '', teacherPhoto: ''),
+    );
+  }
+}
+
+class ProfilePageWrapper extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(body: ProfilePage());
+  }
+}
+
+class HomePageWrapper extends StatelessWidget {
+  final int dues, fine, payments, subjects;
+  final String lastPaymentDate, todayStatus, schoolName, studentPhoto;
+  final String studentName, studentClass, studentsection;
+  final VoidCallback onSiblingTap;
+  final VoidCallback onMenuTap;
+
+  const HomePageWrapper({
+    super.key,
+    required this.dues,
+    required this.fine,
+    required this.payments,
+    required this.subjects,
+    required this.lastPaymentDate,
+    required this.todayStatus,
+    required this.schoolName,
+    required this.studentPhoto,
+    required this.studentName,
+    required this.studentClass,
+    required this.studentsection,
+    required this.onSiblingTap,
+    required this.onMenuTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xffF6F8FC),
+      appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: onMenuTap,
+        ),
+
+        titleSpacing: 0,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                '$schoolName',
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            GestureDetector(
+              child: Icon(Icons.calendar_month_rounded),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => StudentCalendarPage()),
+              ),
+            ),
+            SizedBox(width: 5),
+            GestureDetector(
+              child: Icon(Icons.notifications),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => NotificationListPage()),
+              ),
+            ),
+            SizedBox(width: 5),
+            GestureDetector(
+              onTap: onSiblingTap,
+              child: CircleAvatar(
+                radius: 15,
+                backgroundColor: Colors.grey.shade200,
+                child: ClipOval(
+                  child: Image.network(
+                    studentPhoto,
+                    width: 30,
+                    height: 30,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Image.asset(
+                        AppAssets.defaultAvatar,
+                        width: 30,
+                        height: 30,
+                        fit: BoxFit.cover,
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 5),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+      ),
+      body: DashboardHomeBody(
+        dues: dues,
+        fine: fine,
+        payments: payments,
+        subjects: subjects,
+        lastPaymentDate: lastPaymentDate,
+        todayStatus: todayStatus,
       ),
     );
   }
@@ -209,7 +517,6 @@ class _DashboardHomeBodyState extends State<DashboardHomeBody> {
   ) {
     final totalAmount = dues + fine;
     print('DEBUG: Dialog opened. Total amount: ₹$totalAmount');
-
     showDialog(
       context: dashboardContext,
       builder: (dialogContext) {
