@@ -1,5 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+// import 'package:shivalik_school/bus_tracking/bus_tracking.dart';
+
+import 'package:shivalik_school/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -13,7 +16,6 @@ import 'package:shivalik_school/Attendance_UI/attendance_pie_chart.dart';
 import 'package:shivalik_school/Notification/notification_list.dart';
 import 'package:shivalik_school/connect_teacher/connect_with_us.dart';
 import 'package:shivalik_school/dashboard/calendar.dart';
-import 'package:shivalik_school/dashboard/dashboard_new.dart';
 import 'package:shivalik_school/dashboard/payment_screen.dart';
 import 'package:shivalik_school/homework/homework_model.dart';
 import 'package:shivalik_school/homework/homework_page.dart';
@@ -240,7 +242,6 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                       ),
                     ),
                   ),
-
                   title: Text(
                     name,
                     style: const TextStyle(fontWeight: FontWeight.w600),
@@ -277,12 +278,8 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                             ),
                             ElevatedButton.icon(
                               onPressed: () async {
-                                Navigator.pop(
-                                  confirmContext,
-                                ); // close confirm dialog
-                                Navigator.pop(
-                                  context,
-                                ); // close sibling list dialog safely
+                                Navigator.pop(confirmContext);
+                                Navigator.pop(context);
                                 if (!mounted) return;
                                 await _shiftLogin(studentId);
                               },
@@ -490,7 +487,6 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                       'DEBUG: Result not PAYMENT_COMPLETE/FAILED. Status check skipped.',
                     );
                     ScaffoldMessenger.of(dashboardContext).showSnackBar(
-                      // ✅ dashboardContext
                       const SnackBar(
                         content: Text(
                           'Payment process abandoned. Status not confirmed.',
@@ -499,10 +495,8 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                     );
                   }
                 } else {
-                  // API Call failed
                   print('ERROR: initiatePayment failed (paymentData is null).');
                   ScaffoldMessenger.of(dashboardContext).showSnackBar(
-                    // ✅ dashboardContext
                     const SnackBar(
                       content: Text(
                         'Could not initialize payment. Please try again.',
@@ -1240,17 +1234,6 @@ class LeftSidebarMenu extends StatelessWidget {
                 );
               },
             ),
-            sidebarTile(
-              icon: Icons.dashboard,
-              context: context,
-              title: 'New Dashboard',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => DashboardNew()),
-                );
-              },
-            ),
 
             sidebarTile(
               icon: Icons.person,
@@ -1436,9 +1419,17 @@ class LeftSidebarMenu extends StatelessWidget {
                         ),
                       ),
                       TextButton(
-                        onPressed: () {
+                        onPressed: () async {
                           Navigator.pop(context);
-                          ApiService.post(context, "/logout");
+
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.clear();
+                          if (!context.mounted) return;
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(builder: (_) => LoginPage()),
+                            (route) => false,
+                          );
                         },
                         child: const Text("Logout"),
                       ),

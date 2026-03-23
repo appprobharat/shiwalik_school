@@ -4,35 +4,30 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shivalik_school/Notification/notification_service.dart';
+import 'package:shivalik_school/dashboard/dashboard_screen.dart';
 
 import 'firebase_options.dart';
 import 'package:shivalik_school/splash_screen.dart';
 import 'package:shivalik_school/login_page.dart';
-import 'package:shivalik_school/dashboard/dashboard_screen.dart';
+// import 'package:shivalik_school/dashboard/dashboard_screen.dart';
 import 'package:shivalik_school/teacher/teacher_dashboard_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+
 /// 🔔 Background notification handler
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  FirebaseMessaging.onBackgroundMessage(
-    _firebaseMessagingBackgroundHandler,
-  );
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   await NotificationService.initialize();
   runApp(const MyApp());
-  
 }
 
 class MyApp extends StatelessWidget {
@@ -42,7 +37,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
-        navigatorObservers: [routeObserver], 
+      navigatorObservers: [routeObserver],
       debugShowCheckedModeBanner: false,
       home: const RootDecider(),
     );
@@ -66,28 +61,25 @@ class _RootDeciderState extends State<RootDecider> {
   void initState() {
     super.initState();
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    debugPrint("🔔 Foreground message received");
-    NotificationService.display(message);
-  });
- _initFirebaseMessaging(); 
+      debugPrint("🔔 Foreground message received");
+      NotificationService.display(message);
+    });
+    _initFirebaseMessaging();
     _initApp();
   }
-Future<void> _initFirebaseMessaging() async {
-  NotificationSettings settings =
-      await FirebaseMessaging.instance.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
 
-  debugPrint("🔔 Permission status: ${settings.authorizationStatus}");
+  Future<void> _initFirebaseMessaging() async {
+    NotificationSettings settings = await FirebaseMessaging.instance
+        .requestPermission(alert: true, badge: true, sound: true);
 
-  String? fcmToken = await FirebaseMessaging.instance.getToken();
-  String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+    debugPrint("🔔 Permission status: ${settings.authorizationStatus}");
 
-  debugPrint("🔥 FCM TOKEN = $fcmToken");
-  debugPrint("🍎 APNS TOKEN = $apnsToken");
-}
+    String? fcmToken = await FirebaseMessaging.instance.getToken();
+    String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+
+    debugPrint("🔥 FCM TOKEN = $fcmToken");
+    debugPrint("🍎 APNS TOKEN = $apnsToken");
+  }
 
   Future<void> _initApp() async {
     try {
@@ -96,8 +88,7 @@ Future<void> _initFirebaseMessaging() async {
       final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
       final userType = prefs.getString('user_type') ?? '';
 
-      final secureToken =
-          await _secureStorage.read(key: 'auth_token') ?? '';
+      final secureToken = await _secureStorage.read(key: 'auth_token') ?? '';
       final prefsToken = prefs.getString('auth_token') ?? '';
 
       final token = secureToken.isNotEmpty ? secureToken : prefsToken;
@@ -127,7 +118,7 @@ Future<void> _initFirebaseMessaging() async {
       case 'Teacher':
         return const TeacherDashboardScreen();
       case 'Student':
-        return const DashboardScreen();
+        return DashboardScreen();
       default:
         return LoginPage();
     }

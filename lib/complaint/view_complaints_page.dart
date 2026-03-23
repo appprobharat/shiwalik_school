@@ -6,6 +6,8 @@ import 'package:shivalik_school/complaint/addComplaint.dart';
 import 'package:shivalik_school/complaint/complaint_detail_page.dart';
 import 'package:shivalik_school/dashboard/dashboard_screen.dart';
 
+
+
 class ViewComplaintPage extends StatefulWidget {
   const ViewComplaintPage({super.key});
 
@@ -92,7 +94,7 @@ class _ViewComplaintPageState extends State<ViewComplaintPage> {
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => const DashboardScreen()),
+              MaterialPageRoute(builder: (_) => DashboardScreen()),
             );
           },
         ),
