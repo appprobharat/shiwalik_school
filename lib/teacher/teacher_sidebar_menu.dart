@@ -162,6 +162,7 @@ class _TeacherSidebarMenuState extends State<TeacherSidebarMenu> {
             'Mark Geo Attd.',
             () => _navigate(context, const GeoAttendanceTeacher()),
           ),
+          
           sidebarItem(
             context,
             Icons.person,
