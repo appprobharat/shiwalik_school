@@ -199,16 +199,7 @@ class ApiService {
   // ================= ATTACHMENTS =================
   static const siblingUrl =
       'https://shiwalikeducation.apppro.in/uploads/no_image.png';
-  static const String s3Base =
-      "https://s3.ap-south-1.amazonaws.com/shiwalikeducation.apppro.in";
-
-  static String attachmentUrl(String schoolId, String folder, String file) {
-    return "$s3Base/documents/$schoolId/$folder/$file";
-  }
-
-  static String homeworkAttachment(String fileName) {
-    return "$s3Base/homeworks/$fileName";
-  }
+ 
 }
 
 class AppColors {

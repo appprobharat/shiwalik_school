@@ -5,17 +5,15 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shivalik_school/Notification/notification_service.dart';
 import 'package:shivalik_school/dashboard/dashboard_screen.dart';
-
 import 'firebase_options.dart';
 import 'package:shivalik_school/splash_screen.dart';
 import 'package:shivalik_school/login_page.dart';
-// import 'package:shivalik_school/dashboard/dashboard_screen.dart';
 import 'package:shivalik_school/teacher/teacher_dashboard_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
-/// 🔔 Background notification handler
+
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
@@ -23,10 +21,20 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  await NotificationService.initialize();
+    FirebaseMessaging.onBackgroundMessage(
+      _firebaseMessagingBackgroundHandler,
+    );
+
+    await NotificationService.initialize();
+  } catch (e) {
+    debugPrint("MAIN ERROR: $e");
+  }
+
   runApp(const MyApp());
 }
 

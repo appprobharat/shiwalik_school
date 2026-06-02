@@ -974,14 +974,12 @@ class InfoCard extends StatelessWidget {
         ? Colors.orange.shade50
         : Colors.indigo.shade50;
 
-    final String? attachment = item["Attachment"];
+  final String? attachment = item["Attachment"];
     final String schoolId = item["SchoolId"]?.toString() ?? '';
     final bool hasAttachment =
         attachment != null && attachment.isNotEmpty && schoolId.isNotEmpty;
-    final String folder = isEvent ? 'event' : 'notice';
-    final String fullAttachmentUrl = hasAttachment
-        ? ApiService.attachmentUrl(schoolId, folder, attachment)
-        : '';
+ final String fullAttachmentUrl =
+    hasAttachment ? attachment.toString() : '';
 
     debugPrint("📎 NOTICE ATTACHMENT URL: $fullAttachmentUrl");
 

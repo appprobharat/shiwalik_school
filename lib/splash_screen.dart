@@ -2,6 +2,7 @@ import 'package:shivalik_school/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shivalik_school/api_service.dart';
 import 'package:in_app_update/in_app_update.dart';
+import 'dart:io';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,11 +20,13 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkForUpdate() async {
     try {
-      final AppUpdateInfo updateInfo = await InAppUpdate.checkForUpdate();
+      if (Platform.isAndroid) {
+        final AppUpdateInfo updateInfo = await InAppUpdate.checkForUpdate();
 
-      if (updateInfo.updateAvailability == UpdateAvailability.updateAvailable) {
-        // 🔴 FORCE UPDATE
-        await InAppUpdate.performImmediateUpdate();
+        if (updateInfo.updateAvailability ==
+            UpdateAvailability.updateAvailable) {
+          await InAppUpdate.performImmediateUpdate();
+        }
       }
     } catch (e) {
       debugPrint("In-app update error: $e");
