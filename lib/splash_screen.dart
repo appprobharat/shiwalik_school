@@ -1,8 +1,9 @@
+import 'dart:io';
+
 import 'package:shivalik_school/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shivalik_school/api_service.dart';
 import 'package:in_app_update/in_app_update.dart';
-import 'dart:io';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,28 +13,32 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _checkForUpdate();
-  }
+@override
+void initState() {
+  super.initState();
+
+  Future.microtask(() async {
+    await _checkForUpdate();
+  });
+}
 
   Future<void> _checkForUpdate() async {
-    try {
-      if (Platform.isAndroid) {
-        final AppUpdateInfo updateInfo = await InAppUpdate.checkForUpdate();
+  try {
+    if (Platform.isAndroid) {
+      final AppUpdateInfo updateInfo =
+          await InAppUpdate.checkForUpdate();
 
-        if (updateInfo.updateAvailability ==
-            UpdateAvailability.updateAvailable) {
-          await InAppUpdate.performImmediateUpdate();
-        }
+      if (updateInfo.updateAvailability ==
+          UpdateAvailability.updateAvailable) {
+        await InAppUpdate.performImmediateUpdate();
       }
-    } catch (e) {
-      debugPrint("In-app update error: $e");
     }
-
-    _goNext();
+  } catch (e) {
+    debugPrint("In-app update error: $e");
   }
+
+  _goNext();
+}
 
   void _goNext() {
     Future.delayed(const Duration(seconds: 2), () {

@@ -7,14 +7,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'login_page.dart';
 
 class ApiService {
-  /// 🔥 CHANGE ONLY HERE
+ 
   static const String baseUrl = "https://shiwalikeducation.apppro.in/api";
     static const String Url ="https://shiwalikeducation.apppro.in";
 
-  /// ⏱ Timeout (iOS safe)
+
   static const Duration timeout = Duration(seconds: 20);
 
-  /// 🔐 Secure storage (iOS + Android)
+
   static final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
@@ -49,7 +49,7 @@ class ApiService {
     );
   }
 
-  // ================= HEADERS =================
+
 
   static Future<Map<String, String>> _headers() async {
     final token = await _getToken();
