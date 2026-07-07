@@ -28,7 +28,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _login() async {
-    // 1️⃣ Validation
+    if (_isLoading) return;
     if (idController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty) {
       setState(() {
@@ -69,9 +69,9 @@ class _LoginPageState extends State<LoginPage> {
       if (data['status'] == true) {
         await ApiService.saveSession(data);
 
-        await sendFcmTokenToLaravel();
-
         if (!mounted) return;
+
+        sendFcmTokenToLaravel();
 
         final String userType = data['user_type'];
 
@@ -90,7 +90,7 @@ class _LoginPageState extends State<LoginPage> {
         } else {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => DashboardScreen()),
+            MaterialPageRoute(builder: (_) => const DashboardScreen()),
             (_) => false,
           );
         }
@@ -118,26 +118,18 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> sendFcmTokenToLaravel() async {
-    final fcmToken = await FirebaseMessaging.instance.getToken();
-    debugPrint("FCM TOKEN: $fcmToken");
-
-    if (fcmToken == null || fcmToken.isEmpty) {
-      debugPrint('❌ FCM token not found');
-      return;
-    }
-
     try {
-      final response = await ApiService.post(
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+
+      if (fcmToken == null || fcmToken.isEmpty) return;
+
+      await ApiService.post(
         context,
         "/save_token",
         body: {'fcm_token': fcmToken},
       );
-
-      if (response != null) {
-        debugPrint("✅ FCM token sent successfully");
-      }
     } catch (e) {
-      debugPrint("❌ FCM Error: $e");
+      debugPrint("FCM Error: $e");
     }
   }
 
