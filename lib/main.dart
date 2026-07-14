@@ -54,8 +54,8 @@ class MyApp extends StatelessWidget {
 
       supportedLocales: const [Locale('en')],
 
-      home: const RootDecider(),//for ios bypass splash screen
-      // home: LoginPage(),
+      home: const RootDecider(),
+
     );
   }
 }
