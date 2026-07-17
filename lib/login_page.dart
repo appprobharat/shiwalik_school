@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+
 import 'package:shivalik_school/admin/admin_dashboard.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +30,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _login() async {
-    if (_isLoading) return;
+    // 1️⃣ Validation
     if (idController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty) {
       setState(() {
@@ -69,9 +71,11 @@ class _LoginPageState extends State<LoginPage> {
       if (data['status'] == true) {
         await ApiService.saveSession(data);
 
-        if (!mounted) return;
+        if (Platform.isAndroid) {
+          await sendFcmTokenToLaravel();
+        }
 
-        sendFcmTokenToLaravel();
+        if (!mounted) return;
 
         final String userType = data['user_type'];
 
@@ -118,19 +122,26 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> sendFcmTokenToLaravel() async {
-    try {
-      final fcmToken = await FirebaseMessaging.instance.getToken();
+    final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
 
-      if (fcmToken == null || fcmToken.isEmpty) return;
+    debugPrint("APNS TOKEN: $apnsToken");
 
-      await ApiService.post(
-        context,
-        "/save_token",
-        body: {'fcm_token': fcmToken},
-      );
-    } catch (e) {
-      debugPrint("FCM Error: $e");
+    if (apnsToken == null) {
+      debugPrint("❌ APNS token not available yet");
+      return;
     }
+
+    final fcmToken = await FirebaseMessaging.instance.getToken();
+
+    debugPrint("FCM TOKEN: $fcmToken");
+
+    if (fcmToken == null) return;
+
+    await ApiService.post(
+      context,
+      "/save_token",
+      body: {'fcm_token': fcmToken},
+    );
   }
 
   void _launchURL() async {

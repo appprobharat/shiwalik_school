@@ -20,6 +20,15 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
+// Future<void> main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+
+//   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+//   await NotificationService.initialize();
+//   runApp(const MyApp());
+// }
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -54,8 +63,8 @@ class MyApp extends StatelessWidget {
 
       supportedLocales: const [Locale('en')],
 
-      home: const RootDecider(),
-
+      // home: const RootDecider(),//for ios bypass splash screen
+      home: LoginPage(),
     );
   }
 }
@@ -73,6 +82,16 @@ class _RootDeciderState extends State<RootDecider> {
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+  //     debugPrint("🔔 Foreground message received");
+  //     NotificationService.display(message);
+  //   });
+  //   _initFirebaseMessaging();
+  //   _initApp();
+  // }
 
   @override
   void initState() {
@@ -105,7 +124,18 @@ class _RootDeciderState extends State<RootDecider> {
       debugPrint("FCM ERROR: $e");
     }
   }
+  // Future<void> _initFirebaseMessaging() async {
+  //   NotificationSettings settings = await FirebaseMessaging.instance
+  //       .requestPermission(alert: true, badge: true, sound: true);
 
+  //   debugPrint("🔔 Permission status: ${settings.authorizationStatus}");
+
+  //   String? fcmToken = await FirebaseMessaging.instance.getToken();
+  //   String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+
+  //   debugPrint("🔥 FCM TOKEN = $fcmToken");
+  //   debugPrint("🍎 APNS TOKEN = $apnsToken");
+  // }
 
   Future<void> _initApp() async {
     try {
