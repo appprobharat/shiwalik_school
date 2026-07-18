@@ -6,7 +6,7 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 
 	<key>CFBundleDisplayName</key>
-	<string>Shivalik_school</string>
+	<string>Shivalik School</string>
 
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
@@ -18,7 +18,7 @@
 	<string>6.0</string>
 
 	<key>CFBundleName</key>
-	<string>Shivalik_school</string>
+	<string>shivalik_school</string>
 
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>

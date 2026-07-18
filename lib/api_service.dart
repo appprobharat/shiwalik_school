@@ -11,15 +11,13 @@ class ApiService {
   static const String baseUrl = "https://shiwalikeducation.apppro.in/api";
     static const String Url ="https://shiwalikeducation.apppro.in";
 
-
+  /// ⏱ Timeout (iOS safe)
   static const Duration timeout = Duration(seconds: 20);
 
-
+  /// 🔐 Secure storage (iOS + Android)
   static final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.unlocked),
   );
-
   // ================= TOKEN =================
 
   static Future<String> _getToken() async {
@@ -31,6 +29,15 @@ class ApiService {
     }
 
     return prefs.getString('auth_token') ?? '';
+  }
+
+  static Future<Map<String, String>> multipartHeaders() async {
+    final token = await _getToken();
+    return {'Authorization': 'Bearer $token', 'Accept': 'application/json'};
+  }
+
+  static Future<Map<String, String>> headers() async {
+    return await _headers();
   }
 
   // ================= LOGOUT =================
@@ -49,7 +56,7 @@ class ApiService {
     );
   }
 
-
+  // ================= HEADERS =================
 
   static Future<Map<String, String>> _headers() async {
     final token = await _getToken();
@@ -58,10 +65,6 @@ class ApiService {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
     };
-  }
-  static Future<Map<String, String>> multipartHeaders() async {
-    final token = await _getToken();
-    return {'Authorization': 'Bearer $token', 'Accept': 'application/json'};
   }
 
   // ================= POST WITHOUT TOKEN (LOGIN / OTP) =================
