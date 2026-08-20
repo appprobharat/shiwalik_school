@@ -164,7 +164,7 @@ Future<void> downloadFile(BuildContext context, String filePath) async {
 }
 
 // ====================================================
-// 📝 RECENT HOMEWORKS WIDGET (UI UNCHANGED)
+// 📝 RECENT HOMEWORKS WIDGET
 // ====================================================
 Widget buildRecentHomeworks(
   BuildContext context,
@@ -173,87 +173,259 @@ Widget buildRecentHomeworks(
   final limitedHomeworks = homeworks.take(3).toList();
 
   return Container(
-    padding: const EdgeInsets.all(8),
+    padding: const EdgeInsets.all(10),
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
       boxShadow: [
         BoxShadow(
-          color: Colors.grey.withOpacity(0.2),
-          blurRadius: 6,
-          offset: const Offset(0, 3),
+          color: Colors.black.withOpacity(.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
         ),
       ],
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        /// Header
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              '📝 Recent Homeworks',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
+            Container(
+              height: 42,
+              width: 42,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF4F8CFF), AppColors.primary],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.menu_book_rounded,
+                color: Colors.white,
+                size: 20,
               ),
             ),
-            TextButton(
-              onPressed: () {
+
+            const SizedBox(width: 10),
+
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Recent Homework",
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    "Latest assignments",
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const HomeworkPage()),
                 );
               },
-              child: const Text(
-                "View All",
-                style: TextStyle(color: AppColors.primary),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(.08),
+                  border: Border.all(color: AppColors.primary.withOpacity(.2)),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Text(
+                      "View All",
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(width: 3),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 11,
+                      color: AppColors.primary,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
-        limitedHomeworks.isEmpty
-            ? const Text("No homeworks available.")
-            : ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: limitedHomeworks.length,
-                itemBuilder: (context, index) {
-                  final hw = limitedHomeworks[index];
 
-                  return ListTile(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => HomeworkDetailPage(homework: hw),
-                        ),
-                      );
-                    },
-                    leading: const Icon(Icons.book, color: AppColors.primary),
-                    title: Text(
-                      hw['HomeworkTitle'] ?? '',
-                      style: const TextStyle(fontSize: 14),
+        const SizedBox(height: 8),
+
+        /// Empty State
+        if (limitedHomeworks.isEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            alignment: Alignment.center,
+            child: Column(
+              children: [
+                Icon(
+                  Icons.assignment_outlined,
+                  size: 32,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "No homework available",
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: limitedHomeworks.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 6),
+            itemBuilder: (context, index) {
+              final hw = limitedHomeworks[index];
+
+              return InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => HomeworkDetailPage(homework: hw),
                     ),
-                    subtitle: Text(
-                      'Submission: ${formatDate(hw['SubmissionDate'])}',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    trailing: hw['Attachment'] != null
-                        ? IconButton(
-                            icon: const Icon(
-                              Icons.download,
-                              color: AppColors.primary,
-                            ),
-                            onPressed: () {
-                              downloadFile(context, hw['Attachment']);
-                            },
-                          )
-                        : const SizedBox.shrink(),
                   );
                 },
-              ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      /// Icon
+                      Container(
+                        height: 38,
+                        width: 38,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.book_outlined,
+                          color: AppColors.primary,
+                          size: 18,
+                        ),
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      /// Homework Details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              hw['HomeworkTitle'] ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.schedule_rounded,
+                                  size: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                                const SizedBox(width: 3),
+                                Expanded(
+                                  child: Text(
+                                    formatDate(hw['SubmissionDate']),
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      /// Download
+                      if (hw['Attachment'] != null)
+                        InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () {
+                            downloadFile(context, hw['Attachment']);
+                          },
+                          child: Container(
+                            height: 30,
+                            width: 30,
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.download_rounded,
+                              size: 16,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ),
+
+                      const SizedBox(width: 4),
+
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: Colors.grey.shade500,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
       ],
     ),
   );

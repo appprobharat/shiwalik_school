@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -159,7 +160,58 @@ class ApiService {
       return null;
     }
   }
+  static Future<http.StreamedResponse?> multipartPost(
+    BuildContext context,
+    String endpoint, {
+    Map<String, String>? fields,
+    File? file,
+    String fileKey = 'Attachment',
+  }) async {
+    final token = await _getToken();
 
+    if (token.isEmpty) {
+      await forceLogout(context);
+      return null;
+    }
+
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse("$baseUrl$endpoint"),
+      );
+
+      request.headers.addAll(await multipartHeaders());
+
+      // ✅ FIELDS
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
+
+      // ✅ FILE
+      if (file != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(fileKey, file.path),
+        );
+      }
+
+      final response = await request.send();
+
+      if (response.statusCode == 401) {
+        await forceLogout(context);
+        return null;
+      }
+
+      return response;
+    } on TimeoutException {
+      debugPrint("⏱ API TIMEOUT: $endpoint");
+
+      return null;
+    } catch (e) {
+      debugPrint("❌ MULTIPART ERROR => $e");
+
+      return null;
+    }
+  }
   // ================= SAVE SESSIONS =================
   static Future<void> saveSession(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
@@ -211,6 +263,15 @@ class AppColors {
   static const danger = Colors.red;
   static const info = Colors.blue;
   static const designerColor = Colors.orange;
+  static const LinearGradient appBarGradient = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [
+    Color(0xFFFF6D00), 
+    Color(0xFFFF8F00), 
+    Color(0xFFFFB300), 
+  ],
+);
 }
 
 class AppAssets {

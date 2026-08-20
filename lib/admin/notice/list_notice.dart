@@ -351,7 +351,7 @@ class _NoticeListPageState extends State<NoticeListPage> {
     if (isDownloading) return;
     isDownloading = true;
 
-   final fullUrl = filePath.toString();
+    final fullUrl = filePath.toString();
 
     try {
       final fileName = fullUrl.split('/').last;

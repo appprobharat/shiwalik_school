@@ -25,9 +25,8 @@ class _TeacherAddHomeworkPageState extends State<TeacherAddHomeworkPage> {
   DateTime? assignDate;
   DateTime? submissionDate;
   File? selectedFile;
-
   bool isLoading = false;
-  bool _isSubmitting = false; 
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -42,9 +41,6 @@ class _TeacherAddHomeworkPageState extends State<TeacherAddHomeworkPage> {
     }
   }
 
-  // ============================
-  // 🔄 EDIT MODE SEQUENTIAL LOAD
-  // ============================
   Future<void> _loadEditFlow() async {
     setState(() => isLoading = true);
     await fetchClasses();
@@ -52,9 +48,6 @@ class _TeacherAddHomeworkPageState extends State<TeacherAddHomeworkPage> {
     if (mounted) setState(() => isLoading = false);
   }
 
-  // ============================
-  // 📚 FETCH CLASSES
-  // ============================
   Future<void> fetchClasses() async {
     final res = await ApiService.post(context, "/get_class");
     if (res == null) return;
@@ -66,9 +59,6 @@ class _TeacherAddHomeworkPageState extends State<TeacherAddHomeworkPage> {
     }
   }
 
-  // ============================
-  // 📘 FETCH SECTIONS
-  // ============================
   Future<void> fetchSections(int classId) async {
     final res = await ApiService.post(
       context,
@@ -86,9 +76,6 @@ class _TeacherAddHomeworkPageState extends State<TeacherAddHomeworkPage> {
     }
   }
 
-  // ============================
-  // ✏️ FETCH HOMEWORK DETAILS
-  // ============================
   Future<void> fetchHomeworkDetails(int homeworkId) async {
     final res = await ApiService.post(
       context,
@@ -282,6 +269,7 @@ class _TeacherAddHomeworkPageState extends State<TeacherAddHomeworkPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xffF5F7FB),
       appBar: AppBar(
         title: Text(
           widget.homeworkToEdit != null ? "Edit Homework" : "Add Homework",
@@ -299,43 +287,200 @@ class _TeacherAddHomeworkPageState extends State<TeacherAddHomeworkPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(labelText: "Class"),
-                    value: selectedClassId,
-                    items: classes.map((cls) {
-                      return DropdownMenuItem<int>(
-                        value: cls['id'],
-                        child: Text(cls['Class']),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() => selectedClassId = val);
-                      if (val != null) fetchSections(val);
-                    },
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primary,
+                          AppColors.primary.withOpacity(.8),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          height: 48,
+                          width: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(.18),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.assignment_rounded,
+                            color: Colors.white,
+                          ),
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.homeworkToEdit != null
+                                    ? "Edit Homework"
+                                    : "Create Homework",
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+
+                              const SizedBox(height: 4),
+
+                              const Text(
+                                "Fill all details before submitting.",
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(labelText: "Section"),
-                    value: selectedSectionId,
-                    items: sections.map((sec) {
-                      return DropdownMenuItem<int>(
-                        value: sec['id'],
-                        child: Text(sec['SectionName']),
-                      );
-                    }).toList(),
-                    onChanged: (val) => setState(() => selectedSectionId = val),
+
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          value: selectedClassId,
+                          isExpanded: true,
+                          borderRadius: BorderRadius.circular(14),
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: AppColors.primary,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: "Class",
+                            prefixIcon: const Icon(
+                              Icons.school_outlined,
+                              color: AppColors.primary,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 16,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                          items: classes.map((cls) {
+                            return DropdownMenuItem<int>(
+                              value: cls['id'],
+                              child: Text(
+                                cls['Class'],
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            setState(() => selectedClassId = val);
+                            if (val != null) fetchSections(val);
+                          },
+                        ),
+                      ),
+
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        child: DropdownButtonFormField<int>(
+                          value: selectedSectionId,
+                          isExpanded: true,
+                          borderRadius: BorderRadius.circular(14),
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: AppColors.primary,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: "Section",
+                            prefixIcon: const Icon(
+                              Icons.groups_rounded,
+                              color: AppColors.primary,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 16,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                          items: sections.map((sec) {
+                            return DropdownMenuItem<int>(
+                              value: sec['id'],
+                              child: Text(
+                                sec['SectionName'],
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) =>
+                              setState(() => selectedSectionId = val),
+                        ),
+                      ),
+                    ],
                   ),
+
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: _titleController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: "Homework Title",
+                      prefixIcon: const Icon(Icons.title),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: _descriptionController,
-                    decoration: const InputDecoration(labelText: "Description"),
+                    decoration: InputDecoration(
+                      labelText: "Description",
+                      prefixIcon: Icon(Icons.edit_note),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
                     maxLines: 6,
                   ),
                   const SizedBox(height: 10),
@@ -366,16 +511,21 @@ class _TeacherAddHomeworkPageState extends State<TeacherAddHomeworkPage> {
                           }
                         },
                         child: Container(
-                          width: double.infinity,
                           padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
                             vertical: 14,
-                            horizontal: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(.05),
+                                blurRadius: 8,
+                              ),
+                            ],
                           ),
+
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -427,16 +577,21 @@ class _TeacherAddHomeworkPageState extends State<TeacherAddHomeworkPage> {
                           }
                         },
                         child: Container(
-                          width: double.infinity,
                           padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
                             vertical: 14,
-                            horizontal: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(.05),
+                                blurRadius: 8,
+                              ),
+                            ],
                           ),
+
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -492,7 +647,7 @@ class _TeacherAddHomeworkPageState extends State<TeacherAddHomeworkPage> {
                                 child: Row(
                                   children: const [
                                     Icon(
-                                      Icons.attach_file,
+                                      Icons.cloud_upload_outlined,
                                       color: AppColors.primary,
                                     ),
                                     SizedBox(width: 8),
@@ -567,18 +722,27 @@ class _TeacherAddHomeworkPageState extends State<TeacherAddHomeworkPage> {
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
+                    height: 52,
                     width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.white,
                       ),
-                      onPressed: submitHomework,
-                      child: Text(
+                      label: Text(
                         widget.homeworkToEdit != null
                             ? "Update Homework"
                             : "Submit Homework",
                         style: const TextStyle(color: Colors.white),
                       ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: submitHomework,
                     ),
                   ),
                 ],
