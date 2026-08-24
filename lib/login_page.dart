@@ -54,7 +54,7 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      // 2️⃣ API Call (NO type sent)
+     
       final response = await ApiService.postPublic(
         "/login",
         body: {
@@ -63,7 +63,7 @@ class _LoginPageState extends State<LoginPage> {
         },
       ).timeout(const Duration(seconds: 15));
 
-      // 3️⃣ Null response check
+     
       if (response == null) {
         setState(() {
           _errorMessage = "Server not responding";
@@ -75,7 +75,7 @@ class _LoginPageState extends State<LoginPage> {
       final data = jsonDecode(response.body);
       debugPrint("🟢 LOGIN RESPONSE: $data");
 
-      // 4️⃣ Success
+ 
       if (data['status'] == true) {
         await ApiService.saveSession(data);
 
@@ -120,6 +120,7 @@ class _LoginPageState extends State<LoginPage> {
         _errorMessage = "Something went wrong";
       });
     } finally {
+   
       if (mounted) {
         setState(() => _isLoading = false);
       }
